@@ -1,0 +1,14 @@
+template_path: pipeline.yaml
+
+parameters:
+  ProjectName: '{{ var.ProjectName }}'
+  Environment: '{{ var.ProdEnvShortName }}'
+  RegionShortName: '{{ var.RegionShortName }}'
+  GitHubOAuthToken: '{{ var.GitHubOAuthToken }}'
+  GitHubRepo: '{{ var.GitHubRepo }}'
+  GitHubBranch: '{{ var.GitHubBranch }}'
+  GitHubOwner: '{{ var.GitHubOwner }}'
+
+stack_tags:
+  tr:project-name: '{{ var.ProjectName }}'
+  tr:environment: '{{ var.ProdEnvShortName }}'
