@@ -63,10 +63,25 @@ Resources:
                 Provider: CodeBuild
                 Version: 1
               OutputArtifacts:
-                - Name: app-build
+                - Name: appbuild
               Configuration:
                 ProjectName: !Ref CodeBuild
-              RunOrder: 1
+              RunOrder: 2
+        - Name: ProdDeploy
+          Actions:
+            - Name: Build
+              InputArtifacts:
+                - Name: appbuild
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              OutputArtifacts:
+                - Name: appdeploy
+              Configuration:
+                ProjectName: !Ref ProdDeploy
+              RunOrder: 3
 
         # Build and Deploy, etc., stages would follow. Here is an example
 #        - Name: Deploy
@@ -113,7 +128,9 @@ Resources:
         Statement:
           Effect: Allow
           Principal:
-            Service: codepipeline.amazonaws.com
+            Service:
+              - codepipeline.amazonaws.com
+              - codebuild.amazonaws.com
           Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess #TODO: Reduce permissions
@@ -163,8 +180,8 @@ Resources:
   CodeBuild:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub ${ProjectName}-${RegionShortName}
-      ServiceRole: !Ref CodeBuildRole
+      Name: !Sub ${ProjectName}-build-${RegionShortName}
+      ServiceRole: !Ref CodePipelineRole
       Artifacts:
         ArtifactIdentifier: !Sub '${ProjectName}-aws-resources'
         Type: 'CODEPIPELINE'
@@ -178,6 +195,8 @@ Resources:
         Image: 'aws/codebuild/amazonlinux2-x86_64-standard:3.0'
         PrivilegedMode: true
         EnvironmentVariables:
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
           - Name: 'PROJECT_NAME'
             Value: !Ref ProjectName
       Source:
@@ -188,44 +207,39 @@ Resources:
         - Key: project-name
           Value: !Ref ProjectName
 
-  CodeBuildRole:
-    Type: AWS::IAM::Role
+  ProdDeploy:
+    Type: AWS::CodeBuild::Project
     Properties:
-      RoleName: !Sub ${ProjectName}-cicd-build-${RegionShortName}
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          Effect: Allow
-          Principal:
-            Service: codebuild.amazonaws.com
-          Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess #TODO: Reduce permissions
-#      Policies:
-#        - PolicyName: CodeBuildRolePolicy
-#          PolicyDocument:
-#            Version: 2012-10-17
-#            Statement:
-#              - Effect: Allow
-#                Resource: arn:aws:logs:*:*:*
-#                Action:
-#                  - logs:CreateLogGroup
-#                  - logs:CreateLogStream
-#                  - logs:DescribeLogStreams
-#                  - logs:PutLogEvents
-#                  - logs:PutSubscriptionFilter
-#              - Effect: Allow
-#                Resource: !GetAtt PipelineArtifactsBucket.Arn
-#                Action:
-#                  - s3:*
-#              - Effect: Allow
-#                Resource: '*'
-#                Action:
-#                  - codebuild:CreateReportGroup
-#                  - codebuild:CreateReport
-#                  - codebuild:UpdateReport
-#                  - codebuild:BatchPutTestCases
-#                  - codebuild:BatchPutCodeCoverages
+      Name: !Sub ${ProjectName}-prod-deploy-${RegionShortName}
+      ServiceRole: !Ref CodePipelineRole
+      Artifacts:
+        Name: appbuild
+        Type: 'CODEPIPELINE'
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: 'aws/codebuild/amazonlinux2-x86_64-standard:3.0'
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: 'AWS_ACCOUNT_ID'
+            Value: !Ref AWS::AccountId
+          - Name: 'PROJECT_NAME'
+            Value: !Ref ProjectName
+          - Name: 'ENV_NAME'
+            Value: 'prod'
+      Source:
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              commands:
+                - pip install sceptre
+            build:
+              commands:
+                - pwd
+                - sceptre --var-file variables.yaml launch -y $ENV_NAME
+        Type: 'CODEPIPELINE'
+      TimeoutInMinutes: 10
       Tags:
         - Key: project-name
           Value: !Ref ProjectName
