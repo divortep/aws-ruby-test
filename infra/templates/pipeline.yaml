@@ -3,8 +3,6 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
   ProjectName:
     Type: String
-  Environment:
-    Type: String
   RegionShortName:
     Type: String
   GitHubOAuthToken:
@@ -20,29 +18,16 @@ Resources:
   PipelineArtifactsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub ${ProjectName}-cicd-artifacts-${RegionShortName}
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
+      BucketName: !Sub ${ProjectName}-cicd-${RegionShortName}
       AccessControl: Private
-      OwnershipControls:
-        Rules:
-          - ObjectOwnership: BucketOwnerPreferred
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: True
-        BlockPublicPolicy: True
-        IgnorePublicAcls: True
-        RestrictPublicBuckets: True
       Tags:
         - Key: project-name
           Value: !Ref ProjectName
-        - Key: environment-type
-          Value: !Ref Environment
 
   CodePipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
+      Name: !Sub ${ProjectName}-${RegionShortName}
       ArtifactStore:
         Type: S3
         Location: !Ref PipelineArtifactsBucket
@@ -67,6 +52,22 @@ Resources:
                 PollForSourceChanges: false
                 OAuthToken: !Ref GitHubOAuthToken
               RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: Build
+              InputArtifacts:
+                - Name: SourceCode
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              OutputArtifacts:
+                - Name: Distro
+              Configuration:
+                ProjectName: !Ref CodeBuild
+              RunOrder: 1
+
         # Build and Deploy, etc., stages would follow. Here is an example
 #        - Name: Deploy
 #          Actions:
@@ -88,8 +89,6 @@ Resources:
       Tags:
         - Key: project-name
           Value: !Ref ProjectName
-        - Key: environment-type
-          Value: !Ref Environment
 
   GithubWebhook:
     Type: AWS::CodePipeline::Webhook
@@ -108,6 +107,7 @@ Resources:
   CodePipelineRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub ${ProjectName}-cicd-${RegionShortName}
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -117,3 +117,79 @@ Resources:
           Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess #TODO: Reduce permissions
+      Tags:
+        - Key: project-name
+          Value: !Ref ProjectName
+
+
+  CodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${ProjectName}-${RegionShortName}
+      ServiceRole: !Ref CodeBuildRole
+      Artifacts:
+        ArtifactIdentifier: !Sub '${ProjectName}-aws-resources'
+        Type: 'CODEPIPELINE'
+        OverrideArtifactName: true
+      Cache:
+        Type: S3
+        Location: !Sub '${PipelineArtifactsBucket}/dependencies/cache'
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: 'aws/codebuild/amazonlinux2-x86_64-standard:3.0'
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: 'PROJECT_NAME'
+            Value: !Ref ProjectName
+      Source:
+        BuildSpec: 'buildspec.yml'
+        Type: 'CODEPIPELINE'
+      TimeoutInMinutes: 10
+      Tags:
+        - Key: project-name
+          Value: !Ref ProjectName
+
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-cicd-build-${RegionShortName}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: codebuild.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CodeBuildRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*'
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:DescribeLogStreams
+                  - logs:PutLogEvents
+                  - logs:PutSubscriptionFilter
+              - Effect: Allow
+                Resource: !GetAtt PipelineArtifactsBucket.Arn
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:GetBucketAcl
+                  - s3:GetBucketLocation
+              - Effect: Allow
+                Resource: '*'
+                Action:
+                  - codebuild:CreateReportGroup
+                  - codebuild:CreateReport
+                  - codebuild:UpdateReport
+                  - codebuild:BatchPutTestCases
+                  - codebuild:BatchPutCodeCoverages
+      Tags:
+        - Key: project-name
+          Value: !Ref ProjectName

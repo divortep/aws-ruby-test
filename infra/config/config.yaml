@@ -1,0 +1,20 @@
+#accounts:
+#  - 689314585043
+#archive_name: cicd/execute/config.zip
+#deployment_engine_version: 1.6.1
+#environment_order:
+#  - cicd
+#github_connection: arn:aws:codestar-connections:us-east-1:689314585043:connection/bfbb2226-a098-483c-a4fa-d8e91d0ae269
+#github_branch: main
+#github_owner: tr
+#github_repo: litigation-analytics_dockets-loading-pipeline
+#log_retention: 90
+project_code: aws-ruby-test
+#project_name: docketsloading
+region: eu-north-1
+profile: admin
+#resource_owner: Publishing-OpsCloudServices@thomsonreuters.com
+#service_name: litigationanalytics
+#source_bucket: a206769-iac-source
+#template_bucket_name: a206769-iac-source
+#template_key_prefix: docketsloading-deployment
