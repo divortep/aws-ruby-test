@@ -5,7 +5,6 @@ parameters:
   RegionShortName: '{{ var.RegionShortName }}'
   GitHubRepo: '{{ var.GitHubRepo }}'
   GitHubBranch: '{{ var.GitHubBranch }}'
-  GitHubOwner: '{{ var.GitHubOwner }}'
 
 stack_tags:
   project-name: '{{ var.ProjectName }}'

@@ -9,8 +9,6 @@ Parameters:
     Type: String
   GitHubBranch:
     Type: String
-  GitHubOwner:
-    Type: String
 
 Resources:
   PipelineArtifactsBucket:
@@ -47,7 +45,7 @@ Resources:
                 Repo: !Ref GitHubRepo
                 Branch: !Ref GitHubBranch
                 PollForSourceChanges: false
-                Owner: !Ref '{{resolve:secretsmanager:GitHubSecret:SecretString:githubOwner}}'
+                Owner: '{{resolve:secretsmanager:GitHubSecret:SecretString:githubOwner}}'
                 OAuthToken: '{{resolve:secretsmanager:GitHubSecret:SecretString:githubToken}}'
               RunOrder: 1
         - Name: Build
