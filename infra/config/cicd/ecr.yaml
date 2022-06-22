@@ -1,7 +1,7 @@
-template_path: ecr.yaml
+template_path: cicd/ecr.yaml
 
 parameters:
   ProjectName: '{{ var.ProjectName }}'
 
 stack_tags:
-  tr:project-name: '{{ var.ProjectName }}'
+  project-name: '{{ var.ProjectName }}'

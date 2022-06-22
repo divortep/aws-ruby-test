@@ -1,11 +1,10 @@
-template_path: cicd/pipeline.yaml
+template_path: ecs.yaml
 
 parameters:
   ProjectName: '{{ var.ProjectName }}'
+  Environment: '{{ var.ProdEnvName }}'
   RegionShortName: '{{ var.RegionShortName }}'
-  GitHubRepo: '{{ var.GitHubRepo }}'
-  GitHubBranch: '{{ var.GitHubBranch }}'
-  GitHubOwner: '{{ var.GitHubOwner }}'
 
 stack_tags:
   project-name: '{{ var.ProjectName }}'
+  environment: '{{ var.ProdEnvName }}'

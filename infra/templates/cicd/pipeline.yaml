@@ -5,8 +5,6 @@ Parameters:
     Type: String
   RegionShortName:
     Type: String
-  GitHubOAuthToken:
-    Type: String
   GitHubRepo:
     Type: String
   GitHubBranch:
@@ -46,11 +44,11 @@ Resources:
               OutputArtifacts:
                 - Name: sourcecode
               Configuration:
-                Owner: !Ref GitHubOwner
                 Repo: !Ref GitHubRepo
                 Branch: !Ref GitHubBranch
                 PollForSourceChanges: false
-                OAuthToken: !Ref GitHubOAuthToken
+                Owner: !Ref '{{resolve:secretsmanager:GitHubSecret:SecretString:githubOwner}}'
+                OAuthToken: '{{resolve:secretsmanager:GitHubSecret:SecretString:githubToken}}'
               RunOrder: 1
         - Name: Build
           Actions:
@@ -110,7 +108,7 @@ Resources:
     Properties:
       Authentication: GITHUB_HMAC
       AuthenticationConfiguration:
-        SecretToken: !Ref GitHubOAuthToken
+        SecretToken: '{{resolve:secretsmanager:GitHubSecret:SecretString:githubToken}}'
       RegisterWithThirdParty: 'true'
       Filters:
         - JsonPath: "$.ref"
@@ -236,7 +234,8 @@ Resources:
                 - pip install sceptre
             build:
               commands:
-                - pwd
+                - cd ./infra
+                - ls -la
                 - sceptre --var-file variables.yaml launch -y $ENV_NAME
         Type: 'CODEPIPELINE'
       TimeoutInMinutes: 10
