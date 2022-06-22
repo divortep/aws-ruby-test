@@ -6,3 +6,7 @@ GitHubRepo: "aws-ruby-test"
 GitHubBranch: "main"
 
 ProdEnvName: "prod"
+
+VpcId: "vpc-0fdf7c86d7256e8be"
+PrivateSubnets: "subnet-0ab0441261a2f2bad,subnet-0c6fb71888624fb2a,subnet-0563959feb7ad677c"
+PublicSubnets: "subnet-004bec36b9b601ebe,subnet-0ecb1a06d97e36642,subnet-082b11f008aaf4b7a"

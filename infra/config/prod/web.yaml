@@ -1,0 +1,16 @@
+template_path: web.yaml
+
+parameters:
+  ProjectName: '{{ var.ProjectName }}'
+  Environment: '{{ var.ProdEnvName }}'
+  RegionShortName: '{{ var.RegionShortName }}'
+
+  VpcId: '{{ var.VpcId }}'
+  PrivateSubnets: '{{ var.PrivateSubnets }}'
+  PublicSubnets: '{{ var.PublicSubnets }}'
+  ECSClusterArn: !stack_output prod/ecs.yaml::ECSClusterArn
+  ECSExecutionRoleArn: !stack_output prod/ecs.yaml::ECSExecutionRoleArn
+
+stack_tags:
+  project-name: '{{ var.ProjectName }}'
+  environment: '{{ var.ProdEnvName }}'

@@ -233,7 +233,6 @@ Resources:
             build:
               commands:
                 - cd ./infra
-                - ls -la
                 - sceptre --var-file variables.yaml launch -y $ENV_NAME
         Type: 'CODEPIPELINE'
       TimeoutInMinutes: 10
