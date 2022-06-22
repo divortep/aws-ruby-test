@@ -1,0 +1,8 @@
+ProjectName: "aws-ruby-test"
+RegionFulleName: "eu-north-1"
+RegionShortName: "eun1"
+
+GitHubRepo: "aws-ruby-test"
+GitHubBranch: "main"
+
+ProdEnvName: "prod"
