@@ -11,9 +11,9 @@ Parameters:
   VpcId:
     Type: String
   PrivateSubnets:
-    Type: List<String>
+    Type: String
   PublicSubnets:
-    Type: List<String>
+    Type: String
   ECSClusterArn:
     Type: String
   ECSExecutionRoleArn:
@@ -95,9 +95,48 @@ Resources:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED
           SecurityGroups:
-            - !Ref WebSecurityGroup
-          Subnets: !Ref PrivateSubnets
+            - !GetAtt WebSecurityGroup.GroupId
+          Subnets: !Split [ ',', !Ref PrivateSubnets ]
       TaskDefinition: !Ref WebTaskDefinition
+      Tags:
+        - Key: project-name
+          Value: !Ref ProjectName
+        - Key: environment
+          Value: !Ref Environment
+
+  LoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Protocol: HTTP
+      Port: 3000
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${ProjectName}-${Environment}
+      Type: application
+      SecurityGroups:
+        - !GetAtt LoadBalancerSecurityGroup.GroupId
+      Subnets: !Split [ ',', !Ref PublicSubnets ]
+      Tags:
+        - Key: project-name
+          Value: !Ref ProjectName
+        - Key: environment
+          Value: !Ref Environment
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub ${ProjectName}-${Environment}
+      TargetType: ip
+      Protocol: HTTP
+      Port: 3000
+      VpcId: !Ref VpcId
+      HealthCheckPath: /health_check
       Tags:
         - Key: project-name
           Value: !Ref ProjectName
@@ -121,45 +160,6 @@ Resources:
         - Key: environment
           Value: !Ref Environment
 
-  LoadBalancerListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      LoadBalancerArn: !Ref LoadBalancer
-      Protocol: HTTP
-      Port: 3000
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref TargetGroup
-
-  LoadBalancer:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Name: !Sub ${ProjectName}-${Environment}
-      Type: application
-      SecurityGroups:
-        - !Ref LoadBalancerSecurityGroup
-      Subnets: !Ref PublicSubnets
-      Tags:
-        - Key: project-name
-          Value: !Ref ProjectName
-        - Key: environment
-          Value: !Ref Environment
-
-  TargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: !Sub ${ProjectName}-${Environment}
-      TargetType: ip
-      Protocol: HTTP
-      Port: 3000
-      VpcId: !Ref VpcId
-      HealthCheckPath: /health_check
-      Tags:
-        - Key: project-name
-          Value: !Ref ProjectName
-        - Key: environment
-          Value: !Ref Environment
-
   LoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -167,10 +167,10 @@ Resources:
       GroupDescription: Security group for application load balancer
       VpcId: !Ref VpcId
       SecurityGroupIngress:
-        - IpProtocol: tcp
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: tcp
           FromPort: 3000
           ToPort: 3000
-#          CidrIp: 165.225.0.0/16
       Tags:
         - Key: project-name
           Value: !Ref ProjectName

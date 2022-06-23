@@ -1,12 +1,20 @@
 ProjectName: "aws-ruby-test"
-RegionFulleName: "eu-north-1"
+RegionFullName: "eu-north-1"
 RegionShortName: "eun1"
 
 GitHubRepo: "aws-ruby-test"
 GitHubBranch: "main"
 
+QaEnvName: "qa"
 ProdEnvName: "prod"
 
-VpcId: "vpc-0fdf7c86d7256e8be"
-PrivateSubnets: "subnet-0ab0441261a2f2bad,subnet-0c6fb71888624fb2a,subnet-0563959feb7ad677c"
-PublicSubnets: "subnet-004bec36b9b601ebe,subnet-0ecb1a06d97e36642,subnet-082b11f008aaf4b7a"
+VpcCidr: "10.0.0.0/16"
+PrivateSubnetACidr: "10.0.1.0/24"
+PrivateSubnetBCidr: "10.0.2.0/24"
+PrivateSubnetCCidr: "10.0.3.0/24"
+PublicSubnetACidr: "10.0.16.0/24"
+PublicSubnetBCidr: "10.0.17.0/24"
+PublicSubnetCCidr: "10.0.18.0/24"
+
+PrivateSubnetsCidr: "10.0.1.0/20"
+PublicSubnetsCidr: "10.0.16.0/20"
